@@ -1,0 +1,66 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Paleta "Noticias en 55mm": azul + blanco en claro, azul + negro en oscuro.
+ * Sin capa (unlayered) a propósito: así gana siempre sobre los tokens
+ * por defecto de @heroui/styles sin depender del orden de imports.
+ */
+:root,
+.light,
+[data-theme="light"] {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.19 0.03 258);
+
+  --surface: oklch(1 0 0);
+  --surface-foreground: var(--foreground);
+  --surface-secondary: oklch(0.9675 0.008 258);
+  --surface-tertiary: oklch(0.935 0.012 258);
+
+  --overlay: oklch(1 0 0);
+  --overlay-foreground: var(--foreground);
+
+  --muted: oklch(0.48 0.025 258);
+
+  --accent: oklch(0.42 0.16 258);
+  --accent-foreground: oklch(1 0 0);
+
+  --field-background: oklch(1 0 0);
+  --field-border: oklch(0.87 0.016 258);
+  --field-placeholder: var(--muted);
+
+  --border: oklch(0.89 0.014 258);
+  --separator: oklch(0.92 0.012 258);
+  --link: var(--accent);
+}
+
+.dark,
+[data-theme="dark"] {
+  --background: oklch(0.07 0.012 258);
+  --foreground: oklch(0.97 0.007 258);
+
+  --surface: oklch(0.115 0.014 258);
+  --surface-foreground: var(--foreground);
+  --surface-secondary: oklch(0.155 0.016 258);
+  --surface-tertiary: oklch(0.195 0.018 258);
+
+  --overlay: oklch(0.13 0.015 258);
+  --overlay-foreground: var(--foreground);
+
+  --muted: oklch(0.66 0.02 258);
+
+  --default: oklch(0.2 0.015 258);
+  --default-foreground: var(--foreground);
+
+  --accent: oklch(0.68 0.16 254);
+  --accent-foreground: oklch(0.07 0.012 258);
+
+  --field-background: oklch(0.13 0.015 258);
+  --field-border: oklch(0.25 0.02 258);
+
+  --border: oklch(0.22 0.018 258);
+  --separator: oklch(0.19 0.016 258);
+  --link: var(--accent);
+}
