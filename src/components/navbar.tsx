@@ -2,15 +2,33 @@
 
 import { useState } from "react";
 import { Link } from "@heroui/react";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useLocation } from "react-router-dom";
 import clsx from "clsx";
 
 import { siteConfig } from "@/config/site";
+import { getTranslations } from "@/config/translations";
+import { useLanguage } from "@/lib/language";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { LanguageSwitch } from "@/components/language-switch";
 import { InstagramIcon, MailIcon, CameraIcon } from "@/components/icons";
+
+const NAV_LABEL_KEY_BY_HREF: Record<
+  string,
+  "inicio" | "reportajes" | "sobreMi" | "contacto"
+> = {
+  "/": "inicio",
+  "/reportajes": "reportajes",
+  "/sobre-mi": "sobreMi",
+  "/contacto": "contacto",
+};
 
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { pathname } = useLocation();
+  const { language } = useLanguage();
+  const t = getTranslations(language).nav;
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
     <nav className="sticky top-0 z-40 w-full border-b border-separator bg-background/80 backdrop-blur-lg">
@@ -27,11 +45,14 @@ export const Navbar = () => {
               <li key={item.href}>
                 <RouterLink
                   className={clsx(
-                    "text-sm font-medium text-foreground hover:text-accent transition-colors",
+                    "text-sm font-medium transition-colors",
+                    isActive(item.href)
+                      ? "text-accent"
+                      : "text-foreground hover:text-accent",
                   )}
                   to={item.href}
                 >
-                  {item.label}
+                  {t[NAV_LABEL_KEY_BY_HREF[item.href]]}
                 </RouterLink>
               </li>
             ))}
@@ -50,10 +71,12 @@ export const Navbar = () => {
           <Link aria-label="Email" href={siteConfig.links.email}>
             <MailIcon className="text-muted hover:text-accent transition-colors" />
           </Link>
+          <LanguageSwitch />
           <ThemeSwitch />
         </div>
 
         <div className="flex sm:hidden items-center gap-2">
+          <LanguageSwitch />
           <ThemeSwitch />
           <button
             aria-expanded={isMenuOpen}
@@ -93,11 +116,14 @@ export const Navbar = () => {
             {siteConfig.navItems.map((item) => (
               <li key={item.href}>
                 <RouterLink
-                  className="block py-2 text-lg text-foreground no-underline"
+                  className={clsx(
+                    "block py-2 text-lg no-underline",
+                    isActive(item.href) ? "text-accent" : "text-foreground",
+                  )}
                   to={item.href}
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  {item.label}
+                  {t[NAV_LABEL_KEY_BY_HREF[item.href]]}
                 </RouterLink>
               </li>
             ))}

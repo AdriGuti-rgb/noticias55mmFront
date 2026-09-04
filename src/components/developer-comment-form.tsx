@@ -1,20 +1,24 @@
 import { useState } from "react";
 import { Button, Input, Label, TextArea, TextField } from "@heroui/react";
 
-type Status = "idle" | "sending" | "sent" | "error";
+import { getTranslations } from "@/config/translations";
+import { useLanguage } from "@/lib/language";
+import { toast } from "@/lib/toast";
 
 export const DeveloperCommentForm = () => {
+  const { language } = useLanguage();
+  const t = getTranslations(language).developerComment;
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [contact, setContact] = useState("");
-  const [status, setStatus] = useState<Status>("idle");
+  const [isSending, setIsSending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!message.trim()) return;
 
-    setStatus("sending");
+    setIsSending(true);
 
     try {
       const response = await fetch("/api/comments", {
@@ -25,21 +29,23 @@ export const DeveloperCommentForm = () => {
 
       if (!response.ok) throw new Error("request failed");
 
-      setStatus("sent");
+      toast.success(t.success);
       setMessage("");
       setContact("");
     } catch {
-      setStatus("error");
+      toast.danger(t.error);
+    } finally {
+      setIsSending(false);
     }
   };
 
   return (
     <div className="mx-auto max-w-7xl px-6 pb-6">
       <button
-        className="text-xs font-medium text-muted hover:text-accent transition-colors"
+        className="text-xs font-medium text-muted hover:text-accent transition-colors cursor-pointer"
         onClick={() => setIsOpen((open) => !open)}
       >
-        {isOpen ? "Ocultar" : "Comentar al desarrollador"}
+        {isOpen ? t.toggleClose : t.toggleOpen}
       </button>
 
       {isOpen && (
@@ -47,22 +53,19 @@ export const DeveloperCommentForm = () => {
           className="mt-4 flex max-w-md flex-col gap-3"
           onSubmit={handleSubmit}
         >
-          <p className="text-xs text-muted">
-            Este comentario no se publica en la web: llega directamente al
-            desarrollador.
-          </p>
+          <p className="text-xs text-muted">{t.disclaimer}</p>
           <TextField name="contact">
-            <Label>Tu contacto (opcional)</Label>
+            <Label>{t.contactLabel}</Label>
             <Input
-              placeholder="tu@correo.com"
+              placeholder={t.contactPlaceholder}
               value={contact}
               onChange={(e) => setContact(e.target.value)}
             />
           </TextField>
           <TextField isRequired name="message">
-            <Label>Comentario</Label>
+            <Label>{t.messageLabel}</Label>
             <TextArea
-              placeholder="Cuéntanos qué falla o qué te gustaría ver"
+              placeholder={t.messagePlaceholder}
               rows={4}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -70,20 +73,12 @@ export const DeveloperCommentForm = () => {
           </TextField>
           <Button
             className="self-start rounded-full"
-            isDisabled={status === "sending"}
+            isDisabled={isSending}
             type="submit"
             variant="primary"
           >
-            {status === "sending" ? "Enviando…" : "Enviar comentario"}
+            {isSending ? t.submitting : t.submit}
           </Button>
-          {status === "sent" && (
-            <p className="text-sm text-accent">¡Gracias! Comentario enviado.</p>
-          )}
-          {status === "error" && (
-            <p className="text-sm text-danger">
-              No se pudo enviar. Inténtalo de nuevo más tarde.
-            </p>
-          )}
         </form>
       )}
     </div>

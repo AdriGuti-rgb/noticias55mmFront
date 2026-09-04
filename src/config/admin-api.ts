@@ -52,12 +52,17 @@ async function request<T>(path: string, options: RequestInit, auth: boolean): Pr
     throw new ApiError(message, response.status);
   }
 
-  if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  // Los DELETE del backend devuelven 200 (no 204) con cuerpo vacío (`remove()` no retorna nada):
+  // `response.json()` sobre un cuerpo vacío lanza un SyntaxError, así que se lee como texto primero.
+  const text = await response.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 export const publicApi = {
   get: <T>(path: string): Promise<T> => request<T>(path, { method: "GET" }, false),
+  post: <T>(path: string, body?: unknown): Promise<T> =>
+    request<T>(path, { method: "POST", body: JSON.stringify(body) }, false),
 };
 
 export const adminApi = {
@@ -93,6 +98,7 @@ export interface Category {
   name: string;
   nameEn?: string | null;
   slug: string;
+  icon?: string | null;
 }
 
 export type PublicationType = "solo" | "event";
@@ -106,6 +112,19 @@ export interface PublicationPhoto {
   sizeBytes: number;
   caption?: string | null;
   position: number;
+}
+
+export type CommentStatus = "unread" | "read";
+
+export interface AdminComment {
+  id: string;
+  message: string;
+  contact?: string | null;
+  status: CommentStatus;
+  emailSent: boolean;
+  publication?: { id: string; slug: string; title: string } | null;
+  resolvedBy?: { id: string; email: string } | null;
+  createdAt: string;
 }
 
 export interface AdminPublication {

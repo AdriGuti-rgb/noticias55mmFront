@@ -26,6 +26,6 @@ export const siteConfig = {
   links: {
     instagram: "https://instagram.com",
     twitter: "https://x.com",
-    email: "mailto:noticiasEn55mm@gmail.com",
+    email: "mailto:noticiasen55mm@gmail.com",
   },
 };

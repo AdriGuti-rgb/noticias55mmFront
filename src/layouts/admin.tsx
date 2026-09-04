@@ -1,5 +1,6 @@
 import { Button } from "@heroui/react";
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import clsx from "clsx";
 
 import { LogOutIcon } from "@/components/icons";
 import { siteConfig } from "@/config/site";
@@ -10,8 +11,18 @@ const ROLE_LABELS: Record<string, string> = {
   photographer: "Fotógrafo",
 };
 
+const NAV_LINK_CLASS = "text-sm transition-colors";
+
 export default function AdminLayout() {
   const { user, logout } = useAdminAuth();
+  const { pathname } = useLocation();
+
+  const isPublicationsActive =
+    pathname === "/system/admin" ||
+    pathname.startsWith("/system/admin/publications");
+  const isCategoriesActive = pathname.startsWith("/system/admin/categories");
+  const isCommentsActive = pathname.startsWith("/system/admin/comments");
+  const isUsersActive = pathname.startsWith("/system/admin/users");
 
   return (
     <div className="min-h-screen bg-background">
@@ -28,13 +39,55 @@ export default function AdminLayout() {
               </p>
             )}
           </div>
-          <div className="flex items-center gap-4">
+          <nav className="flex items-center gap-4">
             <Link
-              className="text-sm text-muted hover:text-accent"
+              className={clsx(
+                NAV_LINK_CLASS,
+                isPublicationsActive
+                  ? "text-accent font-semibold"
+                  : "text-muted hover:text-accent",
+              )}
               to="/system/admin"
             >
               Publicaciones
             </Link>
+            <Link
+              className={clsx(
+                NAV_LINK_CLASS,
+                isCategoriesActive
+                  ? "text-accent font-semibold"
+                  : "text-muted hover:text-accent",
+              )}
+              to="/system/admin/categories"
+            >
+              Categorías
+            </Link>
+            <Link
+              className={clsx(
+                NAV_LINK_CLASS,
+                isCommentsActive
+                  ? "text-accent font-semibold"
+                  : "text-muted hover:text-accent",
+              )}
+              to="/system/admin/comments"
+            >
+              Comentarios
+            </Link>
+            {user?.role.name === "developer" && (
+              <Link
+                className={clsx(
+                  NAV_LINK_CLASS,
+                  isUsersActive
+                    ? "text-accent font-semibold"
+                    : "text-muted hover:text-accent",
+                )}
+                to="/system/admin/users"
+              >
+                Usuarios
+              </Link>
+            )}
+          </nav>
+          <div className="flex items-center gap-4">
             <Button size="sm" variant="secondary" onPress={logout}>
               <LogOutIcon size={16} />
               Cerrar sesión

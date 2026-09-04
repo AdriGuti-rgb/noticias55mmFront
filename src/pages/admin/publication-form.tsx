@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Button, Card, Input, Label, TextArea, TextField } from "@heroui/react";
+import {
+  Button,
+  buttonVariants,
+  Card,
+  Input,
+  Label,
+  TextArea,
+  TextField,
+} from "@heroui/react";
 
 import {
   adminApi,
@@ -21,7 +29,9 @@ import {
   TrashIcon,
   UploadIcon,
 } from "@/components/icons";
+import { AdminDatePicker } from "@/components/admin/admin-date-picker";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { FilterSelect } from "@/components/admin/filter-select";
 import {
   formatMetadataValue,
   metadataToDateInput,
@@ -29,17 +39,17 @@ import {
   readPhotoMetadata,
   reverseGeocode,
 } from "@/lib/photo-metadata";
+import { toast } from "@/lib/toast";
 
-const selectClassName =
-  "w-full rounded-lg border border-separator bg-transparent px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none";
-const optionClassName = "bg-surface text-foreground";
-/**
- * El panel está forzado a oscuro, pero un <select> nativo no siempre
- * hereda `color-scheme` de un ancestro para pintar su propio desplegable
- * (visto en Chrome/Windows: menú blanco con texto claro, casi ilegible).
- * Declararlo aquí directamente en el elemento evita ese problema.
- */
-const selectStyle: React.CSSProperties = { colorScheme: "dark" };
+const TYPE_OPTIONS = [
+  { id: "solo", label: "En solitario" },
+  { id: "event", label: "Evento / rueda de prensa" },
+];
+
+const STATUS_OPTIONS = [
+  { id: "draft", label: "Borrador" },
+  { id: "published", label: "Publicado" },
+];
 
 function slugify(value: string): string {
   return value
@@ -98,11 +108,13 @@ export default function AdminPublicationFormPage() {
   // creación, prepara un borrador (ver más abajo) antes de mostrar nada.
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const draftCreationStarted = useRef(false);
 
   useEffect(() => {
-    publicApi.get<Category[]>("/categories").then(setCategories).catch(() => undefined);
+    publicApi
+      .get<Category[]>("/categories")
+      .then(setCategories)
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -125,7 +137,13 @@ export default function AdminPublicationFormPage() {
         });
         setPhotos(publication.photos);
       })
-      .catch((err) => setError(err instanceof ApiError ? err.message : "No se pudo cargar la publicación."))
+      .catch((err) =>
+        toast.danger(
+          err instanceof ApiError
+            ? err.message
+            : "No se pudo cargar la publicación.",
+        ),
+      )
       .finally(() => setIsLoading(false));
   }, [id]);
 
@@ -157,14 +175,19 @@ export default function AdminPublicationFormPage() {
         }),
       )
       .catch((err) => {
-        setError(
-          err instanceof ApiError ? err.message : "No se pudo preparar la nueva publicación.",
+        toast.danger(
+          err instanceof ApiError
+            ? err.message
+            : "No se pudo preparar la nueva publicación.",
         );
         setIsLoading(false);
       });
   }, [id, categories, navigate]);
 
-  const updateField = <K extends keyof FormState>(field: K, value: FormState[K]) => {
+  const updateField = <K extends keyof FormState>(
+    field: K,
+    value: FormState[K],
+  ) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -177,7 +200,6 @@ export default function AdminPublicationFormPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setIsSaving(true);
 
     const payload = {
@@ -196,13 +218,23 @@ export default function AdminPublicationFormPage() {
     try {
       if (isEditing && id) {
         await adminApi.patch(`/admin/publications/${id}`, payload);
+        toast.success("Publicación guardada.");
         navigate("/system/admin");
       } else {
-        const created = await adminApi.post<AdminPublication>("/admin/publications", payload);
+        const created = await adminApi.post<AdminPublication>(
+          "/admin/publications",
+          payload,
+        );
+
+        toast.success("Publicación creada.");
         navigate(`/system/admin/publications/${created.id}`, { replace: true });
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo guardar la publicación.");
+      toast.danger(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo guardar la publicación.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -215,7 +247,7 @@ export default function AdminPublicationFormPage() {
   return (
     <div>
       <Link
-        className="inline-flex items-center gap-1 text-sm text-muted hover:text-accent"
+        className={buttonVariants({ variant: "secondary", size: "sm" })}
         to="/system/admin"
       >
         <ArrowLeftIcon size={16} />
@@ -242,11 +274,17 @@ export default function AdminPublicationFormPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <TextField isRequired name="title">
             <Label>Título</Label>
-            <Input value={form.title} onChange={(e) => handleTitleChange(e.target.value)} />
+            <Input
+              value={form.title}
+              onChange={(e) => handleTitleChange(e.target.value)}
+            />
           </TextField>
           <TextField name="titleEn">
             <Label>Título (inglés)</Label>
-            <Input value={form.titleEn} onChange={(e) => updateField("titleEn", e.target.value)} />
+            <Input
+              value={form.titleEn}
+              onChange={(e) => updateField("titleEn", e.target.value)}
+            />
           </TextField>
         </div>
 
@@ -270,91 +308,87 @@ export default function AdminPublicationFormPage() {
               onChange={(e) => updateField("location", e.target.value)}
             />
           </TextField>
-          <label className="flex flex-col gap-2 text-sm">
+          <div className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-foreground">Fecha</span>
-            <input
-              className={selectClassName}
-              style={selectStyle}
-              type="date"
+            <AdminDatePicker
+              aria-label="Fecha"
               value={form.date}
-              onChange={(e) => updateField("date", e.target.value)}
+              onChange={(value) => updateField("date", value)}
             />
-          </label>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <label className="flex flex-col gap-2 text-sm">
+          <div className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-foreground">Categoría</span>
-            <select
-              className={selectClassName}
-              required
-              style={selectStyle}
+            <FilterSelect
+              aria-label="Categoría"
+              items={categories.map((category) => ({
+                id: category.id,
+                label: category.name,
+              }))}
               value={form.categoryId}
-              onChange={(e) => updateField("categoryId", e.target.value)}
-            >
-              <option disabled className={optionClassName} value="">
-                Selecciona una categoría
-              </option>
-              {categories.map((category) => (
-                <option key={category.id} className={optionClassName} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={(value) => updateField("categoryId", value)}
+            />
+          </div>
 
-          <label className="flex flex-col gap-2 text-sm">
+          <div className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-foreground">Tipo</span>
-            <select
-              className={selectClassName}
-              style={selectStyle}
+            <FilterSelect
+              aria-label="Tipo"
+              items={TYPE_OPTIONS}
               value={form.type}
-              onChange={(e) => updateField("type", e.target.value as PublicationType)}
-            >
-              <option className={optionClassName} value="solo">
-                En solitario
-              </option>
-              <option className={optionClassName} value="event">
-                Evento / rueda de prensa
-              </option>
-            </select>
-          </label>
+              onChange={(value) =>
+                updateField("type", value as PublicationType)
+              }
+            />
+          </div>
 
-          <label className="flex flex-col gap-2 text-sm">
+          <div className="flex flex-col gap-1 text-sm">
             <span className="font-medium text-foreground">Estado</span>
-            <select
-              className={selectClassName}
-              style={selectStyle}
+            <FilterSelect
+              aria-label="Estado"
+              items={STATUS_OPTIONS}
               value={form.status}
-              onChange={(e) => updateField("status", e.target.value as PublicationStatus)}
-            >
-              <option className={optionClassName} value="draft">
-                Borrador
-              </option>
-              <option className={optionClassName} value="published">
-                Publicado
-              </option>
-            </select>
-          </label>
+              onChange={(value) =>
+                updateField("status", value as PublicationStatus)
+              }
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <TextField name="body">
             <Label>Texto / noticia (opcional)</Label>
-            <TextArea rows={10} value={form.body} onChange={(e) => updateField("body", e.target.value)} />
+            <TextArea
+              rows={10}
+              value={form.body}
+              onChange={(e) => updateField("body", e.target.value)}
+            />
           </TextField>
           <TextField name="bodyEn">
             <Label>Texto / noticia (inglés)</Label>
-            <TextArea rows={10} value={form.bodyEn} onChange={(e) => updateField("bodyEn", e.target.value)} />
+            <TextArea
+              rows={10}
+              value={form.bodyEn}
+              onChange={(e) => updateField("bodyEn", e.target.value)}
+            />
           </TextField>
         </div>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
-
         <div className="flex items-center justify-end gap-3">
-          <Button className="rounded-full" isDisabled={isSaving} type="submit" variant="primary">
+          <Button
+            className="rounded-full"
+            isDisabled={isSaving}
+            type="submit"
+            variant="primary"
+          >
             {isFreshDraft ? <PlusIcon size={16} /> : <SaveIcon size={16} />}
-            {isSaving ? "Guardando…" : isFreshDraft ? "Crear publicación" : "Guardar cambios"}
+            {isSaving
+              ? "Guardando…"
+              : isFreshDraft
+                ? "Crear publicación"
+                : "Guardar cambios"}
           </Button>
         </div>
       </form>
@@ -394,6 +428,7 @@ function UploadedPhotoCard({
 
   const toggleMetadata = async () => {
     const next = !isOpen;
+
     setIsOpen(next);
     if (next && metadata === undefined) {
       setIsLoading(true);
@@ -429,7 +464,9 @@ function UploadedPhotoCard({
           <TrashIcon size={16} />
         </Button>
       </div>
-      {photo.caption && <p className="truncate px-2 py-1 text-xs text-muted">{photo.caption}</p>}
+      {photo.caption && (
+        <p className="truncate px-2 py-1 text-xs text-muted">{photo.caption}</p>
+      )}
       {isOpen && (
         <div className="border-t border-separator bg-surface p-2">
           {isLoading ? (
@@ -463,25 +500,29 @@ function PhotosSection({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [caption, setCaption] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
-  const [pendingMetadata, setPendingMetadata] = useState<PhotoMetadata | null>(null);
+  const [pendingMetadata, setPendingMetadata] = useState<PhotoMetadata | null>(
+    null,
+  );
   const [isReadingMetadata, setIsReadingMetadata] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+
     setFileName(file?.name ?? null);
     setPendingMetadata(null);
     if (!file) return;
 
     setIsReadingMetadata(true);
     const metadata = await readPhotoMetadata(file);
+
     setPendingMetadata(metadata ?? {});
 
     // Autorrelleno desde EXIF: solo si el usuario todavía no ha puesto nada a mano.
     if (metadata) {
       if (!currentDate) {
         const detectedDate = metadataToDateInput(metadata);
+
         if (detectedDate) onDetectedDate(detectedDate);
       }
       if (
@@ -489,7 +530,11 @@ function PhotosSection({
         typeof metadata.latitude === "number" &&
         typeof metadata.longitude === "number"
       ) {
-        const place = await reverseGeocode(metadata.latitude, metadata.longitude);
+        const place = await reverseGeocode(
+          metadata.latitude,
+          metadata.longitude,
+        );
+
         if (place) onDetectedLocation(place);
       }
     }
@@ -499,15 +544,17 @@ function PhotosSection({
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     const file = fileInputRef.current?.files?.[0];
+
     if (!file) {
-      setError("Selecciona una imagen primero.");
+      toast.danger("Selecciona una imagen primero.");
+
       return;
     }
 
-    setError(null);
     setIsUploading(true);
 
     const formData = new FormData();
+
     formData.append("file", file);
     if (caption) formData.append("caption", caption);
 
@@ -516,13 +563,17 @@ function PhotosSection({
         `/admin/publications/${publicationId}/photos`,
         formData,
       );
+
       onPhotosChange([...photos, photo]);
       setCaption("");
       setFileName(null);
       setPendingMetadata(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      toast.success("Foto añadida.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo subir la foto.");
+      toast.danger(
+        err instanceof ApiError ? err.message : "No se pudo subir la foto.",
+      );
     } finally {
       setIsUploading(false);
     }
@@ -538,8 +589,11 @@ function PhotosSection({
     try {
       await adminApi.delete(`/admin/publication-photos/${pendingDeleteId}`);
       onPhotosChange(photos.filter((p) => p.id !== pendingDeleteId));
+      toast.success("Foto eliminada.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar la foto.");
+      toast.danger(
+        err instanceof ApiError ? err.message : "No se pudo eliminar la foto.",
+      );
     } finally {
       setIsDeletingPhoto(false);
       setPendingDeleteId(null);
@@ -548,24 +602,37 @@ function PhotosSection({
 
   return (
     <section className="mt-6 mb-10 border-b border-separator pb-10">
-      <h2 className="text-lg font-semibold tracking-tight text-foreground">Fotografías</h2>
+      <h2 className="text-lg font-semibold tracking-tight text-foreground">
+        Fotografías
+      </h2>
 
       {photos.length === 0 ? (
-        <p className="mt-2 text-sm text-muted">Todavía no hay fotos en esta publicación.</p>
+        <p className="mt-2 text-sm text-muted">
+          Todavía no hay fotos en esta publicación.
+        </p>
       ) : (
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {photos.map((photo) => (
-            <UploadedPhotoCard key={photo.id} photo={photo} onDelete={setPendingDeleteId} />
+            <UploadedPhotoCard
+              key={photo.id}
+              photo={photo}
+              onDelete={setPendingDeleteId}
+            />
           ))}
         </div>
       )}
 
-      <form className="mt-6 flex flex-wrap items-end gap-3" onSubmit={handleUpload}>
+      <form
+        className="mt-6 flex flex-wrap items-end gap-3"
+        onSubmit={handleUpload}
+      >
         <div className="flex flex-col gap-2 text-sm">
           <span className="font-medium text-foreground">Subir foto</span>
           <label className="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-separator bg-transparent px-3 text-sm text-muted transition-colors hover:border-accent hover:text-foreground">
             <CameraIcon className="shrink-0 text-accent" size={18} />
-            <span className="max-w-40 truncate">{fileName ?? "Elegir imagen…"}</span>
+            <span className="max-w-40 truncate">
+              {fileName ?? "Elegir imagen…"}
+            </span>
             <input
               ref={fileInputRef}
               accept="image/*"
@@ -601,8 +668,6 @@ function PhotosSection({
           )}
         </div>
       )}
-
-      {error && <p className="mt-2 text-sm text-danger">{error}</p>}
 
       <ConfirmDialog
         description="¿Eliminar esta fotografía? Esta acción no se puede deshacer."

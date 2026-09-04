@@ -6,13 +6,13 @@ import { CameraIcon, LogInIcon } from "@/components/icons";
 import { ApiError } from "@/config/admin-api";
 import { siteConfig } from "@/config/site";
 import { useAdminAuth } from "@/lib/admin-auth";
+import { toast } from "@/lib/toast";
 
 export default function AdminLoginPage() {
   const { status, login } = useAdminAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (status === "authenticated") {
@@ -21,14 +21,15 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setIsSubmitting(true);
 
     try {
       await login(email, password);
       navigate("/system/admin", { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo iniciar sesión.");
+      toast.danger(
+        err instanceof ApiError ? err.message : "No se pudo iniciar sesión.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -71,12 +72,6 @@ export default function AdminLoginPage() {
               />
             </TextField>
 
-            {error && (
-              <p className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
-                {error}
-              </p>
-            )}
-
             <Button
               className="mt-2 w-full rounded-full"
               isDisabled={isSubmitting}
@@ -84,7 +79,7 @@ export default function AdminLoginPage() {
               variant="primary"
             >
               <LogInIcon size={18} />
-              {isSubmitting ? "Entrando…" : "Entrar"}
+              {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
             </Button>
           </form>
         </div>

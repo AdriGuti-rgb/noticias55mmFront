@@ -3,11 +3,15 @@ import { Button } from "@heroui/react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { AdminPublication, publicApi } from "@/config/admin-api";
+import { getTranslations } from "@/config/translations";
+import { localized, useLanguage } from "@/lib/language";
 import { ArrowRightIcon, CameraIcon } from "@/components/icons";
 import DefaultLayout from "@/layouts/default";
 
 export default function IndexPage() {
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = getTranslations(language).home;
   const [publications, setPublications] = useState<AdminPublication[]>([]);
 
   useEffect(() => {
@@ -30,27 +34,26 @@ export default function IndexPage() {
         <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-black/10" />
         <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-16">
           <span className="inline-block rounded-full bg-accent px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accent-foreground">
-            Fotoperiodismo
+            {t.badge}
           </span>
           <h1 className="mt-4 max-w-2xl text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Historias contadas a través de la lente.
+            {t.heroTitle}
           </h1>
           <p className="mt-4 max-w-xl text-lg text-white/80">
-            Reportajes documentales sobre las personas y los lugares que casi
-            nunca salen en los titulares.
+            {t.heroSubtitle}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               className="button button--primary button--md rounded-full"
               to="/reportajes"
             >
-              Ver reportajes
+              {t.ctaReportajes}
             </Link>
             <Link
               className="button button--tertiary button--md rounded-full"
               to="/sobre-mi"
             >
-              Sobre mí
+              {t.ctaSobreMi}
             </Link>
           </div>
         </div>
@@ -60,28 +63,29 @@ export default function IndexPage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Reportajes destacados
+              {t.featuredHeading}
             </h2>
-            <p className="mt-2 text-muted">
-              Una selección de los últimos trabajos publicados.
-            </p>
+            <p className="mt-2 text-muted">{t.featuredSubheading}</p>
           </div>
           <Link
             className="hidden sm:inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline"
             to="/reportajes"
           >
-            Ver todos <ArrowRightIcon size={16} />
+            {t.viewAll} <ArrowRightIcon size={16} />
           </Link>
         </div>
 
         {featured.length === 0 ? (
-          <p className="mt-8 text-sm text-muted">
-            Todavía no hay reportajes publicados.
-          </p>
+          <p className="mt-8 text-sm text-muted">{t.emptyFeatured}</p>
         ) : (
           <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-3">
             {featured.map((publication) => {
               const cover = publication.photos[0]?.url;
+              const title = localized(
+                language,
+                publication.title,
+                publication.titleEn,
+              );
 
               return (
                 <Link
@@ -92,7 +96,7 @@ export default function IndexPage() {
                   <div className="aspect-4/3 w-full overflow-hidden rounded-xl bg-surface-secondary">
                     {cover ? (
                       <img
-                        alt={publication.title}
+                        alt={title}
                         className="h-full w-full object-cover grayscale-15 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:grayscale-0"
                         src={cover}
                       />
@@ -103,10 +107,14 @@ export default function IndexPage() {
                     )}
                   </div>
                   <span className="mt-4 inline-block text-xs font-semibold uppercase tracking-wide text-accent">
-                    {publication.category.name}
+                    {localized(
+                      language,
+                      publication.category.name,
+                      publication.category.nameEn,
+                    )}
                   </span>
                   <h3 className="mt-1 text-lg font-semibold tracking-tight group-hover:text-accent transition-colors">
-                    {publication.title}
+                    {title}
                   </h3>
                 </Link>
               );
@@ -126,19 +134,14 @@ export default function IndexPage() {
           </div>
           <div>
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Diez años documentando lo que otros pasan por alto
+              {t.portraitHeading}
             </h2>
-            <p className="mt-4 max-w-lg text-muted">
-              Mi trabajo se mueve entre el reportaje social y el
-              documental de largo aliento, con publicaciones en medios
-              nacionales e internacionales y varios premios de fotografía
-              de prensa.
-            </p>
+            <p className="mt-4 max-w-lg text-muted">{t.portraitText}</p>
             <Link
               className="button button--primary button--md mt-6 inline-flex rounded-full"
               to="/sobre-mi"
             >
-              Conoce mi trabajo
+              {t.portraitCta}
             </Link>
           </div>
         </div>
@@ -146,19 +149,16 @@ export default function IndexPage() {
 
       <section className="mx-auto max-w-7xl px-6 py-16 text-center">
         <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          ¿Tienes una historia que contar?
+          {t.ctaSectionHeading}
         </h2>
-        <p className="mx-auto mt-3 max-w-md text-muted">
-          Disponible para reportajes por encargo, medios y proyectos
-          editoriales de largo formato.
-        </p>
+        <p className="mx-auto mt-3 max-w-md text-muted">{t.ctaSectionText}</p>
         <div className="mt-6">
           <Button
             className="rounded-full"
             variant="primary"
             onPress={() => navigate("/contacto")}
           >
-            Hablemos
+            {t.ctaSectionButton}
           </Button>
         </div>
       </section>

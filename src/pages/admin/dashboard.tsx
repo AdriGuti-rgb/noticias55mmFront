@@ -5,22 +5,29 @@ import { buttonVariants } from "@heroui/react";
 import { adminApi, AdminPublication, ApiError } from "@/config/admin-api";
 import { PlusIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { toast } from "@/lib/toast";
 
 import { ReportsTable } from "./reportsTable";
 
 export default function AdminDashboardPage() {
   const [publications, setPublications] = useState<AdminPublication[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AdminPublication | null>(null);
 
   const loadPublications = () => {
+    setLoadError(false);
     adminApi
       .get<AdminPublication[]>("/admin/publications")
       .then(setPublications)
-      .catch((err) =>
-        setError(err instanceof ApiError ? err.message : "No se pudieron cargar las publicaciones."),
-      );
+      .catch((err) => {
+        setLoadError(true);
+        toast.danger(
+          err instanceof ApiError
+            ? err.message
+            : "No se pudieron cargar las publicaciones.",
+        );
+      });
   };
 
   useEffect(loadPublications, []);
@@ -32,8 +39,13 @@ export default function AdminDashboardPage() {
     try {
       await adminApi.delete(`/admin/publications/${pendingDelete.id}`);
       setPublications((prev) => prev?.filter((p) => p.id !== pendingDelete.id) ?? null);
+      toast.success("Publicación eliminada.");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo eliminar la publicación.");
+      toast.danger(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo eliminar la publicación.",
+      );
     } finally {
       setDeletingId(null);
       setPendingDelete(null);
@@ -45,9 +57,9 @@ export default function AdminDashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Publicaciones</h1>
-          <p className="mt-1 text-sm text-muted">
-            Reportajes y galerías publicados en el sitio.
-          </p>
+          {/* <p className="mt-1 text-sm text-muted">
+            Reportajes y galerías publicados.
+          </p> */}
         </div>
         <Link
           className={buttonVariants({ variant: "primary" })}
@@ -58,10 +70,14 @@ export default function AdminDashboardPage() {
         </Link>
       </div>
 
-      {error && <p className="mt-4 text-sm text-danger">{error}</p>}
-
-      {publications === null && !error && (
+      {publications === null && !loadError && (
         <p className="mt-8 text-sm text-muted">Cargando…</p>
+      )}
+
+      {publications === null && loadError && (
+        <p className="mt-8 text-sm text-muted">
+          No se pudieron cargar las publicaciones.
+        </p>
       )}
 
       {publications?.length === 0 && (
