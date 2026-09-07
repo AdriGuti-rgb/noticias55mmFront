@@ -14,6 +14,7 @@ import { getCategoryIcon } from "@/config/category-icons";
 import { getTranslations } from "@/config/translations";
 import { localized, useLanguage } from "@/lib/language";
 import { CameraIcon, RefreshIcon } from "@/components/icons";
+import { LoadingIndicator } from "@/components/loading-indicator";
 import DefaultLayout from "@/layouts/default";
 
 const ALL_CATEGORIES_KEY = "all";
@@ -179,7 +180,9 @@ export default function ReportajesPage() {
         {error && <p className="mt-8 text-sm text-danger">{error}</p>}
 
         {publications === null && !error && (
-          <p className="mt-8 text-sm text-muted">{t.loading}</p>
+          <p className="mt-8 text-sm text-muted">
+            <LoadingIndicator label={t.loading} />
+          </p>
         )}
 
         {publications !== null &&

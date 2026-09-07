@@ -37,7 +37,7 @@ export default function AboutPage() {
             <img
               alt="Retrato del fotoperiodista"
               className="h-full w-full object-cover"
-              src="https://picsum.photos/seed/contraluz-portrait/800/1000"
+              src="/about.jpg"
             />
           </div>
           <Link

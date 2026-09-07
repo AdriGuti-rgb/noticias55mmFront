@@ -12,6 +12,7 @@ import {
 import { PlusIcon, SaveIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { FilterSelect } from "@/components/admin/filter-select";
+import { LoadingIndicator } from "@/components/loading-indicator";
 import { useAdminAuth } from "@/lib/admin-auth";
 import { toast } from "@/lib/toast";
 
@@ -277,18 +278,22 @@ export default function AdminUsersPage() {
             </Button>
           )}
           <Button isDisabled={isSaving} type="submit" variant="primary">
-            {isEditing ? <SaveIcon size={16} /> : <PlusIcon size={16} />}
-            {isSaving
-              ? "Guardando…"
-              : isEditing
-                ? "Guardar cambios"
-                : "Crear usuario"}
+            {isSaving ? (
+              <LoadingIndicator label="Guardando…" />
+            ) : (
+              <>
+                {isEditing ? <SaveIcon size={16} /> : <PlusIcon size={16} />}
+                {isEditing ? "Guardar cambios" : "Crear usuario"}
+              </>
+            )}
           </Button>
         </div>
       </form>
 
       {users === null && !loadError && (
-        <p className="mt-8 text-sm text-muted">Cargando…</p>
+        <p className="mt-8 text-sm text-muted">
+          <LoadingIndicator label="Cargando…" />
+        </p>
       )}
 
       {users === null && loadError && (

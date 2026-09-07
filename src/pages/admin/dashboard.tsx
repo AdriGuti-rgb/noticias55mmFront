@@ -5,6 +5,7 @@ import { buttonVariants } from "@heroui/react";
 import { adminApi, AdminPublication, ApiError } from "@/config/admin-api";
 import { PlusIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { LoadingIndicator } from "@/components/loading-indicator";
 import { toast } from "@/lib/toast";
 
 import { ReportsTable } from "./reportsTable";
@@ -71,7 +72,9 @@ export default function AdminDashboardPage() {
       </div>
 
       {publications === null && !loadError && (
-        <p className="mt-8 text-sm text-muted">Cargando…</p>
+        <p className="mt-8 text-sm text-muted">
+          <LoadingIndicator label="Cargando…" />
+        </p>
       )}
 
       {publications === null && loadError && (

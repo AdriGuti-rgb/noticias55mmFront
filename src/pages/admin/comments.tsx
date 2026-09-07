@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import clsx from "clsx";
-
 import { CommentsTable } from "./commentsTable";
 
 import { adminApi, AdminComment, ApiError } from "@/config/admin-api";
-import { RefreshIcon } from "@/components/icons";
+import { LoadingIndicator } from "@/components/loading-indicator";
 import { toast } from "@/lib/toast";
 
 export default function AdminCommentsPage() {
@@ -81,16 +79,18 @@ export default function AdminCommentsPage() {
           type="button"
           onClick={loadComments}
         >
-          <RefreshIcon
-            className={clsx(isRefreshing && "animate-spin")}
-            size={16}
-          />
-          {isRefreshing ? "Actualizando…" : "Actualizar"}
+          {isRefreshing ? (
+            <LoadingIndicator label="Actualizando…" />
+          ) : (
+            "Actualizar"
+          )}
         </button>
       </div>
 
       {comments === null && !loadError && (
-        <p className="mt-8 text-sm text-muted">Cargando…</p>
+        <p className="mt-8 text-sm text-muted">
+          <LoadingIndicator label="Cargando…" />
+        </p>
       )}
 
       {comments === null && loadError && (

@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 
+import { LoadingIndicator } from "@/components/loading-indicator";
 import { useAdminAuth } from "@/lib/admin-auth";
 
 export function RequireAdminAuth() {
@@ -8,7 +9,7 @@ export function RequireAdminAuth() {
   if (status === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted">
-        Cargando…
+        <LoadingIndicator label="Cargando…" />
       </div>
     );
   }

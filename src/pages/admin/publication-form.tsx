@@ -32,6 +32,7 @@ import {
 import { AdminDatePicker } from "@/components/admin/admin-date-picker";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { FilterSelect } from "@/components/admin/filter-select";
+import { LoadingIndicator } from "@/components/loading-indicator";
 import {
   formatMetadataValue,
   metadataToDateInput,
@@ -241,7 +242,11 @@ export default function AdminPublicationFormPage() {
   };
 
   if (isLoading) {
-    return <p className="text-sm text-muted">Cargando…</p>;
+    return (
+      <p className="text-sm text-muted">
+        <LoadingIndicator label="Cargando…" />
+      </p>
+    );
   }
 
   return (
@@ -383,12 +388,14 @@ export default function AdminPublicationFormPage() {
             type="submit"
             variant="primary"
           >
-            {isFreshDraft ? <PlusIcon size={16} /> : <SaveIcon size={16} />}
-            {isSaving
-              ? "Guardando…"
-              : isFreshDraft
-                ? "Crear publicación"
-                : "Guardar cambios"}
+            {isSaving ? (
+              <LoadingIndicator label="Guardando…" />
+            ) : (
+              <>
+                {isFreshDraft ? <PlusIcon size={16} /> : <SaveIcon size={16} />}
+                {isFreshDraft ? "Crear publicación" : "Guardar cambios"}
+              </>
+            )}
           </Button>
         </div>
       </form>
@@ -647,8 +654,14 @@ function PhotosSection({
           <Input value={caption} onChange={(e) => setCaption(e.target.value)} />
         </TextField>
         <Button isDisabled={isUploading} type="submit" variant="secondary">
-          <UploadIcon size={16} />
-          {isUploading ? "Subiendo…" : "Añadir foto"}
+          {isUploading ? (
+            <LoadingIndicator label="Subiendo…" />
+          ) : (
+            <>
+              <UploadIcon size={16} />
+              Añadir foto
+            </>
+          )}
         </Button>
       </form>
 

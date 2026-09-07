@@ -29,7 +29,7 @@ export default function IndexPage() {
         <img
           alt="Reportaje fotográfico destacado"
           className="absolute inset-0 h-full w-full object-cover opacity-70"
-          src="https://picsum.photos/seed/contraluz-hero/1800/1200"
+          src="/image_dashboard.jpg"
         />
         <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-black/10" />
         <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-16">

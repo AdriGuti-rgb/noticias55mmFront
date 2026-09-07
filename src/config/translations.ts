@@ -10,7 +10,7 @@ export const translations = {
     },
     home: {
       badge: "Fotoperiodismo",
-      heroTitle: "Historias contadas a través de la lente.",
+      heroTitle: "Historias contadas a través del objetivo.",
       heroSubtitle:
         "Reportajes documentales sobre las personas y los lugares que casi nunca salen en los titulares.",
       ctaReportajes: "Ver reportajes",
@@ -41,7 +41,7 @@ export const translations = {
     about: {
       heading: "Sobre mí",
       paragraph1:
-        "Soy fotoperiodista, especializado en reportaje social y documental de largo aliento. Durante más de diez años he recorrido comunidades rurales y urbanas para contar, desde dentro, historias que rara vez ocupan portada.",
+        "Periodista y fotografo freelancer, especializado en reportajes sociales, culturales y deportivos. Desde hace años recorro distintas ciudades con el objetivo de capturar distintas sensaciones y colores con un estilo naturalista. ",
       paragraph2:
         "Creo en un fotoperiodismo pausado: pasar tiempo con las personas antes de levantar la cámara, volver varias veces al mismo lugar y dejar que la historia se cuente sola. Mi trabajo se ha publicado en medios nacionales e internacionales y ha recibido varios reconocimientos de prensa.",
       timelineHeading: "Trayectoria",

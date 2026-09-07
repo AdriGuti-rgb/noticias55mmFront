@@ -8,6 +8,7 @@ import { adminApi, ApiError, Category, publicApi } from "@/config/admin-api";
 import { CATEGORY_ICON_OPTIONS } from "@/config/category-icons";
 import { PlusIcon, SaveIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { LoadingIndicator } from "@/components/loading-indicator";
 import { toast } from "@/lib/toast";
 
 interface FormState {
@@ -240,19 +241,23 @@ export default function AdminCategoriesPage() {
               </Button>
             )}
             <Button isDisabled={isSaving} type="submit" variant="primary">
-              {isEditing ? <SaveIcon size={16} /> : <PlusIcon size={16} />}
-              {isSaving
-                ? "Guardando…"
-                : isEditing
-                  ? "Guardar cambios"
-                  : "Crear categoría"}
+              {isSaving ? (
+                <LoadingIndicator label="Guardando…" />
+              ) : (
+                <>
+                  {isEditing ? <SaveIcon size={16} /> : <PlusIcon size={16} />}
+                  {isEditing ? "Guardar cambios" : "Crear categoría"}
+                </>
+              )}
             </Button>
           </div>
         </form>
       </Card>
 
       {categories === null && !loadError && (
-        <p className="mt-8 text-sm text-muted">Cargando…</p>
+        <p className="mt-8 text-sm text-muted">
+          <LoadingIndicator label="Cargando…" />
+        </p>
       )}
 
       {categories === null && loadError && (
