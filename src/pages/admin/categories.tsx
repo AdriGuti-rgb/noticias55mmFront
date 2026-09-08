@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Card, Input, Label, TextField } from "@heroui/react";
-import clsx from "clsx";
 
 import { CategoriesTable } from "./categoriesTable";
 
-import { adminApi, ApiError, Category, publicApi } from "@/config/admin-api";
-import { CATEGORY_ICON_OPTIONS } from "@/config/category-icons";
-import { PlusIcon, SaveIcon } from "@/components/icons";
+import { adminApi, ApiError, Category } from "@/config/admin-api";
+import { CameraIcon, PlusIcon, SaveIcon, UploadIcon } from "@/components/icons";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { LoadingIndicator } from "@/components/loading-indicator";
 import { toast } from "@/lib/toast";
@@ -15,10 +13,9 @@ interface FormState {
   name: string;
   nameEn: string;
   slug: string;
-  icon: string | null;
 }
 
-const EMPTY_FORM: FormState = { name: "", nameEn: "", slug: "", icon: null };
+const EMPTY_FORM: FormState = { name: "", nameEn: "", slug: "" };
 
 function slugify(value: string): string {
   return value
@@ -38,11 +35,15 @@ export default function AdminCategoriesPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const iconInputRef = useRef<HTMLInputElement>(null);
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconFileName, setIconFileName] = useState<string | null>(null);
+  const [isUploadingIcon, setIsUploadingIcon] = useState(false);
 
   const loadCategories = () => {
     setLoadError(false);
-    publicApi
-      .get<Category[]>("/categories")
+    adminApi
+      .get<Category[]>("/admin/categories")
       .then(setCategories)
       .catch((err) => {
         setLoadError(true);
@@ -57,6 +58,10 @@ export default function AdminCategoriesPage() {
   useEffect(loadCategories, []);
 
   const isEditing = editingId !== null;
+  const editingCategory = useMemo(
+    () => categories?.find((c) => c.id === editingId) ?? null,
+    [categories, editingId],
+  );
 
   const updateField = <K extends keyof FormState>(
     key: K,
@@ -72,14 +77,17 @@ export default function AdminCategoriesPage() {
       name: category.name,
       nameEn: category.nameEn ?? "",
       slug: category.slug,
-      icon: category.icon ?? null,
     });
+    setIconFile(null);
+    setIconFileName(null);
   };
 
   const startCreate = () => {
     setEditingId(null);
     setSlugTouched(false);
     setForm(EMPTY_FORM);
+    setIconFile(null);
+    setIconFileName(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,7 +98,6 @@ export default function AdminCategoriesPage() {
       name: form.name.trim(),
       nameEn: form.nameEn.trim() || undefined,
       slug: form.slug.trim(),
-      icon: form.icon ?? undefined,
     };
 
     try {
@@ -122,6 +129,65 @@ export default function AdminCategoriesPage() {
       );
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleIconFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+
+    setIconFile(file);
+    setIconFileName(file?.name ?? null);
+  };
+
+  const handleUploadIcon = async () => {
+    if (!editingId || !iconFile) return;
+
+    setIsUploadingIcon(true);
+    const formData = new FormData();
+
+    formData.append("file", iconFile);
+
+    try {
+      const updated = await adminApi.post<Category>(
+        `/admin/categories/${editingId}/icon`,
+        formData,
+      );
+
+      setCategories(
+        (prev) => prev?.map((c) => (c.id === updated.id ? updated : c)) ?? null,
+      );
+      setIconFile(null);
+      setIconFileName(null);
+      if (iconInputRef.current) iconInputRef.current.value = "";
+      toast.success("Icono actualizado.");
+    } catch (err) {
+      toast.danger(
+        err instanceof ApiError ? err.message : "No se pudo subir el icono.",
+      );
+    } finally {
+      setIsUploadingIcon(false);
+    }
+  };
+
+  const toggleActive = async (category: Category) => {
+    try {
+      const updated = await adminApi.patch<Category>(
+        `/admin/categories/${category.id}`,
+        { isActive: !category.isActive },
+      );
+
+      setCategories(
+        (prev) => prev?.map((c) => (c.id === updated.id ? updated : c)) ?? null,
+      );
+      toast.success(
+        updated.isActive ? "Categoría activada." : "Categoría desactivada.",
+      );
+    } catch (err) {
+      toast.danger(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo actualizar la categoría.",
+      );
     }
   };
 
@@ -162,10 +228,6 @@ export default function AdminCategoriesPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Categorías
         </h1>
-        {/* <p className="mt-1 text-sm text-muted">
-          Gestiona las categorías de publicaciones y su icono. Visible para
-          desarrollador y fotógrafo.
-        </p> */}
       </div>
 
       <Card className="mt-6 p-6">
@@ -211,27 +273,49 @@ export default function AdminCategoriesPage() {
 
           <div>
             <Label className="mb-2 block text-sm text-foreground">Icono</Label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORY_ICON_OPTIONS.map(({ key, label, Icon }) => (
-                <button
-                  key={key}
-                  aria-label={label}
-                  className={clsx(
-                    "flex size-11 items-center justify-center rounded-lg border transition-colors cursor-pointer",
-                    form.icon === key
-                      ? "border-accent bg-accent text-accent-foreground"
-                      : "border-separator text-foreground hover:border-accent hover:text-accent",
-                  )}
-                  title={label}
+            {!isEditing ? (
+              <p className="text-xs text-muted">
+                Guarda la categoría primero para poder subirle un icono.
+              </p>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                {editingCategory?.icon && !iconFileName && (
+                  <img
+                    alt="Icono actual"
+                    className="size-11 rounded-lg border border-separator object-cover"
+                    src={editingCategory.icon}
+                  />
+                )}
+                <label className="flex h-11 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-separator bg-transparent px-3 text-sm text-muted transition-colors hover:border-accent hover:text-foreground">
+                  <CameraIcon className="shrink-0 text-accent" size={18} />
+                  <span className="max-w-40 truncate">
+                    {iconFileName ?? "Elegir imagen…"}
+                  </span>
+                  <input
+                    ref={iconInputRef}
+                    accept="image/*"
+                    className="sr-only"
+                    type="file"
+                    onChange={handleIconFileChange}
+                  />
+                </label>
+                <Button
+                  isDisabled={!iconFile || isUploadingIcon}
                   type="button"
-                  onClick={() =>
-                    updateField("icon", form.icon === key ? null : key)
-                  }
+                  variant="secondary"
+                  onPress={handleUploadIcon}
                 >
-                  <Icon size={18} />
-                </button>
-              ))}
-            </div>
+                  {isUploadingIcon ? (
+                    <LoadingIndicator label="Subiendo…" size="sm" />
+                  ) : (
+                    <>
+                      <UploadIcon size={16} />
+                      Subir icono
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-3">
@@ -273,6 +357,7 @@ export default function AdminCategoriesPage() {
             deletingId={deletingId}
             onDelete={setPendingDelete}
             onEdit={startEdit}
+            onToggleActive={toggleActive}
           />
         </div>
       )}

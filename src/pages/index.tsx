@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button } from "@heroui/react";
+import { Button, Skeleton } from "@heroui/react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { AdminPublication, publicApi } from "@/config/admin-api";
@@ -8,20 +8,33 @@ import { localized, useLanguage } from "@/lib/language";
 import { ArrowRightIcon, CameraIcon } from "@/components/icons";
 import DefaultLayout from "@/layouts/default";
 
+const FEATURED_COUNT = 3;
+
 export default function IndexPage() {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const t = getTranslations(language).home;
-  const [publications, setPublications] = useState<AdminPublication[]>([]);
+  const [publications, setPublications] = useState<AdminPublication[] | null>(
+    null,
+  );
 
   useEffect(() => {
     publicApi
-      .get<AdminPublication[]>("/publications")
+      .get<AdminPublication[]>(`/publications?sort=popular&limit=${FEATURED_COUNT}`)
       .then(setPublications)
-      .catch(() => undefined);
+      .catch(() =>
+        publicApi
+          .get<AdminPublication[]>("/publications")
+          .then((all) =>
+            setPublications(
+              [...all].sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0)),
+            ),
+          )
+          .catch(() => undefined),
+      );
   }, []);
 
-  const featured = publications.slice(0, 3);
+  const featured = (publications ?? []).slice(0, FEATURED_COUNT);
 
   return (
     <DefaultLayout>
@@ -75,7 +88,17 @@ export default function IndexPage() {
           </Link>
         </div>
 
-        {featured.length === 0 ? (
+        {publications === null ? (
+          <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i}>
+                <Skeleton className="aspect-4/3 w-full rounded-xl" />
+                <Skeleton className="mt-4 h-3 w-20 rounded" />
+                <Skeleton className="mt-2 h-5 w-3/4 rounded" />
+              </div>
+            ))}
+          </div>
+        ) : featured.length === 0 ? (
           <p className="mt-8 text-sm text-muted">{t.emptyFeatured}</p>
         ) : (
           <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -86,12 +109,17 @@ export default function IndexPage() {
                 publication.title,
                 publication.titleEn,
               );
+              const subtitle = localized(
+                language,
+                publication.subtitle,
+                publication.subtitleEn,
+              );
 
               return (
                 <Link
                   key={publication.slug}
                   className="group block"
-                  to={`/reportajes#${publication.slug}`}
+                  to={`/reportajes/${publication.slug}`}
                 >
                   <div className="aspect-4/3 w-full overflow-hidden rounded-xl bg-surface-secondary">
                     {cover ? (
@@ -116,6 +144,9 @@ export default function IndexPage() {
                   <h3 className="mt-1 text-lg font-semibold tracking-tight group-hover:text-accent transition-colors">
                     {title}
                   </h3>
+                  {subtitle && (
+                    <p className="mt-0.5 text-sm text-muted">{subtitle}</p>
+                  )}
                 </Link>
               );
             })}

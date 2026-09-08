@@ -3,6 +3,7 @@ import { Outlet, Route, Routes } from "react-router-dom";
 
 import IndexPage from "@/pages/index";
 import ReportajesPage from "@/pages/reportajes";
+import PublicationDetailPage from "@/pages/publication-detail";
 import AboutPage from "@/pages/about";
 import ContactoPage from "@/pages/contacto";
 import AdminLoginPage from "@/pages/admin/login";
@@ -11,6 +12,7 @@ import AdminPublicationFormPage from "@/pages/admin/publication-form";
 import AdminCategoriesPage from "@/pages/admin/categories";
 import AdminUsersPage from "@/pages/admin/users";
 import AdminCommentsPage from "@/pages/admin/comments";
+import AdminAnalyticsPage from "@/pages/admin/analytics";
 import AdminLayout from "@/layouts/admin";
 import { RequireAdminAuth } from "@/components/admin/require-admin-auth";
 import { AdminAuthProvider } from "@/lib/admin-auth";
@@ -88,6 +90,7 @@ function App() {
       <Route element={<PublicLayout />}>
         <Route element={<IndexPage />} path="/" />
         <Route element={<ReportajesPage />} path="/reportajes" />
+        <Route element={<PublicationDetailPage />} path="/reportajes/:slug" />
         <Route element={<AboutPage />} path="/sobre-mi" />
         <Route element={<ContactoPage />} path="/contacto" />
       </Route>
@@ -108,6 +111,7 @@ function App() {
             <Route element={<AdminCategoriesPage />} path="categories" />
             <Route element={<AdminCommentsPage />} path="comments" />
             <Route element={<AdminUsersPage />} path="users" />
+            <Route element={<AdminAnalyticsPage />} path="analytics" />
           </Route>
         </Route>
       </Route>

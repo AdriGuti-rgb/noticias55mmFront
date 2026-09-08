@@ -10,9 +10,8 @@ export const translations = {
     },
     home: {
       badge: "Fotoperiodismo",
-      heroTitle: "Historias contadas a través del objetivo.",
-      heroSubtitle:
-        "Reportajes documentales sobre las personas y los lugares que casi nunca salen en los titulares.",
+      heroTitle: "Donde la mejor fuente es el sensor de la cámara.",
+      heroSubtitle: "Reportajes que solo una cámara puede contar.",
       ctaReportajes: "Ver reportajes",
       ctaSobreMi: "Sobre mí",
       featuredHeading: "Reportajes destacados",
@@ -100,6 +99,11 @@ export const translations = {
       success: "¡Gracias! Comentario enviado.",
       error: "No se pudo enviar. Inténtalo de nuevo más tarde.",
     },
+    publicationDetail: {
+      back: "Volver a reportajes",
+      related: "También te puede interesar",
+      notFound: "No se pudo cargar el reportaje.",
+    },
   },
   en: {
     nav: {
@@ -110,9 +114,8 @@ export const translations = {
     },
     home: {
       badge: "Photojournalism",
-      heroTitle: "Stories told through the lens.",
-      heroSubtitle:
-        "Documentary stories about the people and places that rarely make the headlines.",
+      heroTitle: "Where the best source is the camera's sensor.",
+      heroSubtitle: "Stories only a camera can tell.",
       ctaReportajes: "View stories",
       ctaSobreMi: "About me",
       featuredHeading: "Featured stories",
@@ -198,6 +201,11 @@ export const translations = {
       submitting: "Sending…",
       success: "Thanks! Comment sent.",
       error: "Couldn't send it. Please try again later.",
+    },
+    publicationDetail: {
+      back: "Back to stories",
+      related: "You might also like",
+      notFound: "The story couldn't be loaded.",
     },
   },
 } as const satisfies Record<Language, unknown>;

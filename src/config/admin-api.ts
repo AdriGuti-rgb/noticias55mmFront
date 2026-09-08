@@ -98,7 +98,9 @@ export interface Category {
   name: string;
   nameEn?: string | null;
   slug: string;
+  /** URL de la imagen subida (`/uploads/...`), no una clave fija de icono. */
   icon?: string | null;
+  isActive: boolean;
 }
 
 export type PublicationType = "solo" | "event";
@@ -127,11 +129,22 @@ export interface AdminComment {
   createdAt: string;
 }
 
+export interface RelatedPublicationSummary {
+  id: string;
+  slug: string;
+  title: string;
+  titleEn?: string | null;
+  category?: { slug: string; name: string; nameEn?: string | null } | null;
+  photos?: { url: string }[];
+}
+
 export interface AdminPublication {
   id: string;
   slug: string;
   title: string;
   titleEn?: string | null;
+  subtitle?: string | null;
+  subtitleEn?: string | null;
   /** Opcional: muchas galerías "en solitario" no llevan texto/noticia asociado. */
   body?: string | null;
   bodyEn?: string | null;
@@ -142,7 +155,9 @@ export interface AdminPublication {
   type: PublicationType;
   status: PublicationStatus;
   publishedAt?: string | null;
+  viewCount?: number;
   photos: PublicationPhoto[];
+  relatedPublications?: RelatedPublicationSummary[];
   createdAt: string;
   updatedAt: string;
 }

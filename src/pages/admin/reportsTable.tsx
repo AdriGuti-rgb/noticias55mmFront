@@ -14,9 +14,11 @@ import { Link } from "react-router-dom";
 
 import { AdminPublication } from "@/config/admin-api";
 import { ExcelIcon, PencilIcon, TrashIcon } from "@/components/icons";
+import { AdminDatePicker } from "@/components/admin/admin-date-picker";
 import { FilterSelect } from "@/components/admin/filter-select";
 import { SelectionCheckbox } from "@/components/admin/selection-checkbox";
 import { exportRowsToExcel } from "@/lib/export-excel";
+import { formatPublicationDate } from "@/lib/date-format";
 
 const TYPE_FILTER_OPTIONS = [
   { id: "", label: "Todos" },
@@ -60,19 +62,6 @@ const ROWS_PER_PAGE = 8;
 /** `date` (YYYY-MM-DD) ya ordena bien como texto; si no hay, cae a `publishedAt` (ISO, también ordenable). */
 function dateSortValue(publication: AdminPublication): string {
   return publication.date ?? publication.publishedAt ?? "";
-}
-
-function formatDateColumn(publication: AdminPublication): string {
-  if (publication.date) {
-    const [year, month, day] = publication.date.split("-");
-
-    return `${day}/${month}/${year}`;
-  }
-  if (publication.publishedAt) {
-    return new Date(publication.publishedAt).toLocaleDateString("es-ES");
-  }
-
-  return "—";
 }
 
 function compareByColumn(
@@ -139,6 +128,8 @@ export function ReportsTable({
     AdminPublication["status"] | ""
   >("");
   const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
 
   const categoryOptions = useMemo(() => {
@@ -154,7 +145,7 @@ export function ReportsTable({
   }, [publications]);
 
   const hasActiveFilters = Boolean(
-    categoryFilter || typeFilter || statusFilter || search,
+    categoryFilter || typeFilter || statusFilter || search || dateFrom || dateTo,
   );
 
   const clearFilters = () => {
@@ -162,6 +153,8 @@ export function ReportsTable({
     setTypeFilter("");
     setStatusFilter("");
     setSearch("");
+    setDateFrom("");
+    setDateTo("");
   };
 
   const filteredPublications = useMemo(() => {
@@ -178,10 +171,15 @@ export function ReportsTable({
 
         if (!haystack.includes(query)) return false;
       }
+      if (dateFrom || dateTo) {
+        if (!publication.date) return false;
+        if (dateFrom && publication.date < dateFrom) return false;
+        if (dateTo && publication.date > dateTo) return false;
+      }
 
       return true;
     });
-  }, [publications, categoryFilter, typeFilter, statusFilter, search]);
+  }, [publications, categoryFilter, typeFilter, statusFilter, search, dateFrom, dateTo]);
 
   const sortedPublications = useMemo(() => {
     if (!sortDescriptor) return filteredPublications;
@@ -213,7 +211,7 @@ export function ReportsTable({
 
   useEffect(() => {
     setPage(1);
-  }, [categoryFilter, typeFilter, statusFilter, search]);
+  }, [categoryFilter, typeFilter, statusFilter, search, dateFrom, dateTo]);
 
   const handleSortChange = (descriptor: SortDescriptor) => {
     setSortDescriptor(descriptor);
@@ -241,7 +239,7 @@ export function ReportsTable({
         Tipo: TYPE_LABELS[publication.type],
         Estado: STATUS_LABELS[publication.status],
         Ubicación: publication.location ?? "",
-        Fecha: formatDateColumn(publication),
+        Fecha: formatPublicationDate(publication),
         Fotos: publication.photos.length,
         Slug: publication.slug,
       })),
@@ -290,7 +288,7 @@ export function ReportsTable({
       case "date":
         return (
           <span className="text-sm text-muted">
-            {formatDateColumn(publication)}
+            {formatPublicationDate(publication)}
           </span>
         );
       case "photos":
@@ -369,6 +367,24 @@ export function ReportsTable({
             onChange={(value) =>
               setStatusFilter(value as AdminPublication["status"] | "")
             }
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 text-xs">
+          <span className="font-medium text-foreground">Desde</span>
+          <AdminDatePicker
+            aria-label="Fecha desde"
+            value={dateFrom}
+            onChange={setDateFrom}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1 text-xs">
+          <span className="font-medium text-foreground">Hasta</span>
+          <AdminDatePicker
+            aria-label="Fecha hasta"
+            value={dateTo}
+            onChange={setDateTo}
           />
         </div>
 

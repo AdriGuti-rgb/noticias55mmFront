@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   Button,
@@ -6,6 +6,7 @@ import {
   Card,
   Input,
   Label,
+  Skeleton,
   TextArea,
   TextField,
 } from "@heroui/react";
@@ -19,6 +20,7 @@ import {
   PublicationPhoto,
   PublicationStatus,
   PublicationType,
+  RelatedPublicationSummary,
 } from "@/config/admin-api";
 import {
   ArrowLeftIcon,
@@ -34,7 +36,9 @@ import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { FilterSelect } from "@/components/admin/filter-select";
 import { LoadingIndicator } from "@/components/loading-indicator";
 import {
+  CameraInfo,
   formatMetadataValue,
+  getCameraInfo,
   metadataToDateInput,
   PhotoMetadata,
   readPhotoMetadata,
@@ -66,6 +70,8 @@ interface FormState {
   slug: string;
   title: string;
   titleEn: string;
+  subtitle: string;
+  subtitleEn: string;
   body: string;
   bodyEn: string;
   categoryId: string;
@@ -79,6 +85,8 @@ const EMPTY_FORM: FormState = {
   slug: "",
   title: "",
   titleEn: "",
+  subtitle: "",
+  subtitleEn: "",
   body: "",
   bodyEn: "",
   categoryId: "",
@@ -104,6 +112,8 @@ export default function AdminPublicationFormPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [photos, setPhotos] = useState<PublicationPhoto[]>([]);
+  const [related, setRelated] = useState<RelatedPublicationSummary[]>([]);
+  const [currentCategory, setCurrentCategory] = useState<Category | null>(null);
   const [slugTouched, setSlugTouched] = useState(isEditing);
   // Siempre empieza cargando: en modo edición carga la publicación existente; en modo
   // creación, prepara un borrador (ver más abajo) antes de mostrar nada.
@@ -128,6 +138,8 @@ export default function AdminPublicationFormPage() {
           slug: publication.slug,
           title: publication.title,
           titleEn: publication.titleEn ?? "",
+          subtitle: publication.subtitle ?? "",
+          subtitleEn: publication.subtitleEn ?? "",
           body: publication.body ?? "",
           bodyEn: publication.bodyEn ?? "",
           categoryId: publication.category.id,
@@ -137,6 +149,8 @@ export default function AdminPublicationFormPage() {
           status: publication.status,
         });
         setPhotos(publication.photos);
+        setRelated(publication.relatedPublications ?? []);
+        setCurrentCategory(publication.category);
       })
       .catch((err) =>
         toast.danger(
@@ -185,6 +199,27 @@ export default function AdminPublicationFormPage() {
       });
   }, [id, categories, navigate]);
 
+  // `categories` viene del endpoint público (solo activas): si la categoría de la publicación que se
+  // está editando se desactivó después, no estaría entre los `items` y el desplegable quedaría en
+  // blanco. Se añade de vuelta aquí, marcada como "(inactiva)" en el label.
+  const categoryOptions = useMemo(() => {
+    const options = categories.map((category) => ({
+      id: category.id,
+      label: category.name,
+    }));
+
+    if (currentCategory && !categories.some((c) => c.id === currentCategory.id)) {
+      options.push({
+        id: currentCategory.id,
+        label: currentCategory.isActive
+          ? currentCategory.name
+          : `${currentCategory.name} (inactiva)`,
+      });
+    }
+
+    return options;
+  }, [categories, currentCategory]);
+
   const updateField = <K extends keyof FormState>(
     field: K,
     value: FormState[K],
@@ -207,6 +242,8 @@ export default function AdminPublicationFormPage() {
       slug: form.slug,
       title: form.title,
       titleEn: form.titleEn || undefined,
+      subtitle: form.subtitle || undefined,
+      subtitleEn: form.subtitleEn || undefined,
       body: form.body,
       bodyEn: form.bodyEn || undefined,
       categoryId: form.categoryId,
@@ -242,11 +279,7 @@ export default function AdminPublicationFormPage() {
   };
 
   if (isLoading) {
-    return (
-      <p className="text-sm text-muted">
-        <LoadingIndicator label="Cargando…" />
-      </p>
-    );
+    return <PublicationFormSkeleton />;
   }
 
   return (
@@ -275,6 +308,14 @@ export default function AdminPublicationFormPage() {
         />
       )}
 
+      {id && (
+        <RelatedSection
+          publicationId={id}
+          related={related}
+          onRelatedChange={setRelated}
+        />
+      )}
+
       <form className="mt-8 flex flex-col gap-6" onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <TextField isRequired name="title">
@@ -289,6 +330,23 @@ export default function AdminPublicationFormPage() {
             <Input
               value={form.titleEn}
               onChange={(e) => updateField("titleEn", e.target.value)}
+            />
+          </TextField>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <TextField name="subtitle">
+            <Label>Subtítulo</Label>
+            <Input
+              value={form.subtitle}
+              onChange={(e) => updateField("subtitle", e.target.value)}
+            />
+          </TextField>
+          <TextField name="subtitleEn">
+            <Label>Subtítulo (inglés)</Label>
+            <Input
+              value={form.subtitleEn}
+              onChange={(e) => updateField("subtitleEn", e.target.value)}
             />
           </TextField>
         </div>
@@ -328,10 +386,7 @@ export default function AdminPublicationFormPage() {
             <span className="font-medium text-foreground">Categoría</span>
             <FilterSelect
               aria-label="Categoría"
-              items={categories.map((category) => ({
-                id: category.id,
-                label: category.name,
-              }))}
+              items={categoryOptions}
               value={form.categoryId}
               onChange={(value) => updateField("categoryId", value)}
             />
@@ -399,6 +454,53 @@ export default function AdminPublicationFormPage() {
           </Button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function CameraInfoBlock({ info }: { info: CameraInfo }) {
+  const rows: [string, string | null][] = [
+    ["Cámara", info.camera],
+    ["Objetivo", info.lens],
+    ["ISO", info.iso],
+    ["Distancia focal", info.focalLength],
+    ["Apertura", info.aperture],
+    ["Velocidad de obturación", info.shutterSpeed],
+  ].filter(([, value]) => value !== null) as [string, string | null][];
+
+  if (rows.length === 0) return null;
+
+  return (
+    <dl className="mb-2 space-y-1 border-b border-separator pb-2 text-xs">
+      {rows.map(([label, value]) => (
+        <div key={label} className="flex gap-2">
+          <dt className="shrink-0 font-medium text-foreground">{label}</dt>
+          <dd className="truncate text-muted">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function PublicationFormSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <Skeleton className="h-9 w-24 rounded-lg" />
+      <Skeleton className="h-8 w-64 rounded-lg" />
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <Skeleton className="h-16 rounded-lg" />
+        <Skeleton className="h-16 rounded-lg" />
+      </div>
+      <Skeleton className="h-16 rounded-lg" />
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <Skeleton className="h-16 rounded-lg" />
+        <Skeleton className="h-16 rounded-lg" />
+        <Skeleton className="h-16 rounded-lg" />
+      </div>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <Skeleton className="h-40 rounded-lg" />
+        <Skeleton className="h-40 rounded-lg" />
+      </div>
     </div>
   );
 }
@@ -477,9 +579,12 @@ function UploadedPhotoCard({
       {isOpen && (
         <div className="border-t border-separator bg-surface p-2">
           {isLoading ? (
-            <p className="text-xs text-muted">Leyendo datos…</p>
+            <LoadingIndicator label="Leyendo datos…" size="sm" />
           ) : (
-            <MetadataList metadata={metadata ?? {}} />
+            <>
+              <CameraInfoBlock info={getCameraInfo(metadata ?? {})} />
+              <MetadataList metadata={metadata ?? {}} />
+            </>
           )}
         </div>
       )}
@@ -668,16 +773,19 @@ function PhotosSection({
       {fileName && (
         <div className="mt-3 max-w-md rounded-lg border border-separator p-3">
           {isReadingMetadata ? (
-            <p className="text-xs text-muted">Leyendo datos…</p>
+            <LoadingIndicator label="Leyendo datos…" size="sm" />
           ) : (
-            <details>
-              <summary className="cursor-pointer text-xs font-medium text-accent">
-                Datos de la foto ({Object.keys(pendingMetadata ?? {}).length})
-              </summary>
-              <div className="mt-2">
-                <MetadataList metadata={pendingMetadata ?? {}} />
-              </div>
-            </details>
+            <>
+              <CameraInfoBlock info={getCameraInfo(pendingMetadata ?? {})} />
+              <details>
+                <summary className="cursor-pointer text-xs font-medium text-accent">
+                  Datos de la foto ({Object.keys(pendingMetadata ?? {}).length})
+                </summary>
+                <div className="mt-2">
+                  <MetadataList metadata={pendingMetadata ?? {}} />
+                </div>
+              </details>
+            </>
           )}
         </div>
       )}
@@ -690,6 +798,134 @@ function PhotosSection({
         onCancel={() => setPendingDeleteId(null)}
         onConfirm={confirmDeletePhoto}
       />
+    </section>
+  );
+}
+
+function RelatedSection({
+  publicationId,
+  related,
+  onRelatedChange,
+}: {
+  publicationId: string;
+  related: RelatedPublicationSummary[];
+  onRelatedChange: (related: RelatedPublicationSummary[]) => void;
+}) {
+  const [allPublications, setAllPublications] = useState<AdminPublication[]>([]);
+  const [search, setSearch] = useState("");
+  const [isBusy, setIsBusy] = useState(false);
+
+  useEffect(() => {
+    adminApi
+      .get<AdminPublication[]>("/admin/publications")
+      .then(setAllPublications)
+      .catch(() => undefined);
+  }, []);
+
+  const matches = (() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return [];
+    return allPublications
+      .filter(
+        (p) =>
+          p.id !== publicationId &&
+          p.status === "published" &&
+          !related.some((r) => r.id === p.id) &&
+          p.title.toLowerCase().includes(query),
+      )
+      .slice(0, 8);
+  })();
+
+  const addRelated = async (target: AdminPublication) => {
+    setIsBusy(true);
+    try {
+      const updated = await adminApi.post<AdminPublication>(
+        `/admin/publications/${publicationId}/related`,
+        { relatedPublicationId: target.id },
+      );
+      onRelatedChange(updated.relatedPublications ?? []);
+      setSearch("");
+      toast.success("Publicación relacionada.");
+    } catch (err) {
+      toast.danger(err instanceof ApiError ? err.message : "No se pudo relacionar.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const removeRelated = async (target: RelatedPublicationSummary) => {
+    setIsBusy(true);
+    try {
+      const updated = await adminApi.delete<AdminPublication>(
+        `/admin/publications/${publicationId}/related/${target.id}`,
+      );
+      onRelatedChange(updated.relatedPublications ?? []);
+    } catch (err) {
+      toast.danger(err instanceof ApiError ? err.message : "No se pudo desvincular.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  return (
+    <section className="mt-6 mb-10 border-b border-separator pb-10">
+      <h2 className="text-lg font-semibold tracking-tight text-foreground">
+        Publicaciones relacionadas
+      </h2>
+
+      {related.length === 0 ? (
+        <p className="mt-2 text-sm text-muted">
+          Todavía no hay publicaciones relacionadas.
+        </p>
+      ) : (
+        <ul className="mt-4 flex flex-col gap-2">
+          {related.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-center justify-between gap-3 rounded-lg border border-separator px-3 py-2"
+            >
+              <span className="truncate text-sm text-foreground">{item.title}</span>
+              <Button
+                isIconOnly
+                aria-label="Quitar relación"
+                isDisabled={isBusy}
+                size="sm"
+                variant="danger-soft"
+                onPress={() => removeRelated(item)}
+              >
+                <TrashIcon size={16} />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="relative mt-4 max-w-md">
+        <TextField name="relatedSearch">
+          <Label>Buscar publicación para relacionar</Label>
+          <Input
+            placeholder="Título de la publicación…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </TextField>
+        {matches.length > 0 && (
+          <ul className="mt-2 flex flex-col gap-1 rounded-lg border border-separator bg-surface p-1">
+            {matches.map((match) => (
+              <li key={match.id}>
+                <button
+                  className="w-full rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-field disabled:opacity-50"
+                  disabled={isBusy}
+                  type="button"
+                  onClick={() => addRelated(match)}
+                >
+                  {match.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }

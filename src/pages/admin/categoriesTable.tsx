@@ -2,6 +2,7 @@ import type { Selection, SortDescriptor } from "@heroui/react";
 
 import {
   Button,
+  Chip,
   Input,
   Label,
   Pagination,
@@ -14,19 +15,19 @@ import { Category } from "@/config/admin-api";
 import { FilterSelect } from "@/components/admin/filter-select";
 import { SelectionCheckbox } from "@/components/admin/selection-checkbox";
 import {
-  CATEGORY_ICON_OPTIONS,
-  getCategoryIcon,
-} from "@/config/category-icons";
-import { ExcelIcon, PencilIcon, TagIcon, TrashIcon } from "@/components/icons";
+  BanIcon,
+  CheckIcon,
+  ExcelIcon,
+  PencilIcon,
+  TagIcon,
+  TrashIcon,
+} from "@/components/icons";
 import { exportRowsToExcel } from "@/lib/export-excel";
 
-const ICON_FILTER_OPTIONS = [
+const STATUS_FILTER_OPTIONS = [
   { id: "", label: "Todos" },
-  ...CATEGORY_ICON_OPTIONS.map((option) => ({
-    id: option.key,
-    label: option.label,
-  })),
-  { id: "none", label: "Sin icono" },
+  { id: "active", label: "Activa" },
+  { id: "inactive", label: "Inactiva" },
 ];
 
 const columns = [
@@ -35,6 +36,7 @@ const columns = [
   { id: "name", name: "Nombre", sortable: true },
   { id: "nameEn", name: "Nombre (inglés)", sortable: true },
   { id: "slug", name: "Slug", sortable: true },
+  { id: "status", name: "Estado", sortable: true },
   { id: "actions", name: "Acciones", sortable: false },
 ] as const;
 
@@ -50,6 +52,8 @@ function compareByColumn(a: Category, b: Category, column: ColumnId): number {
       return (a.nameEn ?? "").localeCompare(b.nameEn ?? "");
     case "slug":
       return a.slug.localeCompare(b.slug);
+    case "status":
+      return Number(a.isActive) - Number(b.isActive);
     case "select":
     case "icon":
     case "actions":
@@ -62,6 +66,7 @@ interface CategoriesTableProps {
   deletingId: string | null;
   onEdit: (category: Category) => void;
   onDelete: (category: Category) => void;
+  onToggleActive: (category: Category) => void;
 }
 
 /**
@@ -75,19 +80,22 @@ export function CategoriesTable({
   deletingId,
   onEdit,
   onDelete,
+  onToggleActive,
 }: CategoriesTableProps) {
   const [page, setPage] = useState(1);
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor | null>(
     null,
   );
-  const [iconFilter, setIconFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive" | "">(
+    "",
+  );
   const [search, setSearch] = useState("");
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set());
 
-  const hasActiveFilters = Boolean(iconFilter || search);
+  const hasActiveFilters = Boolean(statusFilter || search);
 
   const clearFilters = () => {
-    setIconFilter("");
+    setStatusFilter("");
     setSearch("");
   };
 
@@ -95,9 +103,8 @@ export function CategoriesTable({
     const query = search.trim().toLowerCase();
 
     return categories.filter((category) => {
-      if (iconFilter === "none" && category.icon) return false;
-      if (iconFilter && iconFilter !== "none" && category.icon !== iconFilter)
-        return false;
+      if (statusFilter === "active" && !category.isActive) return false;
+      if (statusFilter === "inactive" && category.isActive) return false;
       if (query) {
         const haystack =
           `${category.name} ${category.nameEn ?? ""} ${category.slug}`.toLowerCase();
@@ -107,7 +114,7 @@ export function CategoriesTable({
 
       return true;
     });
-  }, [categories, iconFilter, search]);
+  }, [categories, statusFilter, search]);
 
   const sortedCategories = useMemo(() => {
     if (!sortDescriptor) return filteredCategories;
@@ -139,7 +146,7 @@ export function CategoriesTable({
 
   useEffect(() => {
     setPage(1);
-  }, [iconFilter, search]);
+  }, [statusFilter, search]);
 
   const handleSortChange = (descriptor: SortDescriptor) => {
     setSortDescriptor(descriptor);
@@ -163,7 +170,7 @@ export function CategoriesTable({
         Nombre: category.name,
         "Nombre (inglés)": category.nameEn ?? "",
         Slug: category.slug,
-        Icono: category.icon ?? "",
+        Estado: category.isActive ? "Activa" : "Inactiva",
       })),
     );
   };
@@ -172,11 +179,16 @@ export function CategoriesTable({
     switch (columnId) {
       case "select":
         return null;
-      case "icon": {
-        const Icon = getCategoryIcon(category.icon) ?? TagIcon;
-
-        return <Icon className="text-muted" size={18} />;
-      }
+      case "icon":
+        return category.icon ? (
+          <img
+            alt=""
+            className="size-4.5 rounded-sm object-cover"
+            src={category.icon}
+          />
+        ) : (
+          <TagIcon className="text-muted" size={18} />
+        );
       case "name":
         return (
           <span className="font-medium text-foreground">{category.name}</span>
@@ -187,9 +199,24 @@ export function CategoriesTable({
         );
       case "slug":
         return <span className="text-xs text-muted">/{category.slug}</span>;
+      case "status":
+        return (
+          <Chip color={category.isActive ? "success" : "danger"} size="sm">
+            {category.isActive ? "Activa" : "Inactiva"}
+          </Chip>
+        );
       case "actions":
         return (
           <div className="flex items-center gap-2">
+            <Button
+              isIconOnly
+              aria-label={category.isActive ? "Desactivar categoría" : "Activar categoría"}
+              size="sm"
+              variant="secondary"
+              onPress={() => onToggleActive(category)}
+            >
+              {category.isActive ? <BanIcon size={16} /> : <CheckIcon size={16} />}
+            </Button>
             <Button
               isIconOnly
               aria-label="Editar categoría"
@@ -227,12 +254,12 @@ export function CategoriesTable({
         </TextField>
 
         <div className="flex flex-col gap-1 text-xs">
-          <span className="font-medium text-foreground">Icono</span>
+          <span className="font-medium text-foreground">Estado</span>
           <FilterSelect
-            aria-label="Icono"
-            items={ICON_FILTER_OPTIONS}
-            value={iconFilter}
-            onChange={setIconFilter}
+            aria-label="Estado"
+            items={STATUS_FILTER_OPTIONS}
+            value={statusFilter}
+            onChange={(value) => setStatusFilter(value as "active" | "inactive" | "")}
           />
         </div>
 

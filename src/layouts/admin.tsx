@@ -23,6 +23,7 @@ export default function AdminLayout() {
   const isCategoriesActive = pathname.startsWith("/system/admin/categories");
   const isCommentsActive = pathname.startsWith("/system/admin/comments");
   const isUsersActive = pathname.startsWith("/system/admin/users");
+  const isAnalyticsActive = pathname.startsWith("/system/admin/analytics");
 
   return (
     <div className="min-h-screen bg-background">
@@ -72,6 +73,17 @@ export default function AdminLayout() {
               to="/system/admin/comments"
             >
               Comentarios
+            </Link>
+            <Link
+              className={clsx(
+                NAV_LINK_CLASS,
+                isAnalyticsActive
+                  ? "text-accent font-semibold"
+                  : "text-muted hover:text-accent",
+              )}
+              to="/system/admin/analytics"
+            >
+              Analíticas
             </Link>
             {user?.role.name === "developer" && (
               <Link

@@ -1,6 +1,43 @@
 import exifr from "exifr";
 
+import { formatDateTime } from "./date-format";
+
 export type PhotoMetadata = Record<string, unknown>;
+
+export interface CameraInfo {
+  camera: string | null;
+  lens: string | null;
+  iso: string | null;
+  focalLength: string | null;
+  aperture: string | null;
+  shutterSpeed: string | null;
+}
+
+/** Extrae los campos EXIF de cámara más relevantes para mostrar de forma curada. */
+export function getCameraInfo(metadata: PhotoMetadata): CameraInfo {
+  const make = typeof metadata.Make === "string" ? metadata.Make.trim() : "";
+  const model = typeof metadata.Model === "string" ? metadata.Model.trim() : "";
+  const camera = [make, model].filter(Boolean).join(" ") || null;
+
+  const lens = typeof metadata.LensModel === "string" ? metadata.LensModel.trim() || null : null;
+
+  const iso = typeof metadata.ISO === "number" ? `ISO ${metadata.ISO}` : null;
+
+  const focalLength =
+    typeof metadata.FocalLength === "number" ? `${Math.round(metadata.FocalLength)}mm` : null;
+
+  const aperture = typeof metadata.FNumber === "number" ? `f/${metadata.FNumber}` : null;
+
+  let shutterSpeed: string | null = null;
+  if (typeof metadata.ExposureTime === "number" && metadata.ExposureTime > 0) {
+    shutterSpeed =
+      metadata.ExposureTime < 1
+        ? `1/${Math.round(1 / metadata.ExposureTime)}s`
+        : `${metadata.ExposureTime}s`;
+  }
+
+  return { camera, lens, iso, focalLength, aperture, shutterSpeed };
+}
 
 /** Lee los EXIF de una imagen (archivo local antes de subir, o URL ya subida). */
 export async function readPhotoMetadata(source: File | string): Promise<PhotoMetadata | null> {
@@ -46,7 +83,7 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
 
 /** Da forma legible a un valor de metadato cualquiera para listarlo en pantalla. */
 export function formatMetadataValue(value: unknown): string {
-  if (value instanceof Date) return value.toLocaleString("es-ES");
+  if (value instanceof Date) return formatDateTime(value);
   if (value instanceof Uint8Array || Array.isArray(value)) return `[${value.length} valores]`;
   if (typeof value === "object" && value !== null) return JSON.stringify(value);
   return String(value);

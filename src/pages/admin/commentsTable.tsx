@@ -17,6 +17,7 @@ import { CheckIcon, ExcelIcon, MailIcon } from "@/components/icons";
 import { FilterSelect } from "@/components/admin/filter-select";
 import { SelectionCheckbox } from "@/components/admin/selection-checkbox";
 import { exportRowsToExcel } from "@/lib/export-excel";
+import { formatDateTime } from "@/lib/date-format";
 
 const STATUS_FILTER_OPTIONS = [
   { id: "", label: "Todos" },
@@ -49,13 +50,6 @@ function truncate(text: string, maxLength: number): string {
   if (flat.length <= maxLength) return flat;
 
   return `${flat.slice(0, maxLength).trimEnd()}…`;
-}
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("es-ES", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
 }
 
 function compareByColumn(
@@ -182,7 +176,7 @@ export function CommentsTable({
         Contacto: comment.contact ?? "Anónimo",
         Mensaje: comment.message,
         Estado: STATUS_LABELS[comment.status],
-        Fecha: formatDate(comment.createdAt),
+        Fecha: formatDateTime(comment.createdAt),
         Publicación: comment.publication?.title ?? "",
         "Correo enviado": comment.emailSent ? "Sí" : "No",
       })),
@@ -217,7 +211,7 @@ export function CommentsTable({
       case "date":
         return (
           <span className="text-sm text-muted">
-            {formatDate(comment.createdAt)}
+            {formatDateTime(comment.createdAt)}
           </span>
         );
       case "publication":
