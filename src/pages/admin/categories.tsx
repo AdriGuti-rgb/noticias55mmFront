@@ -111,6 +111,8 @@ export default function AdminCategoriesPage() {
           (prev) =>
             prev?.map((c) => (c.id === updated.id ? updated : c)) ?? null,
         );
+        toast.success("Categoría guardada.");
+        startCreate();
       } else {
         const created = await adminApi.post<Category>(
           "/admin/categories",
@@ -118,9 +120,12 @@ export default function AdminCategoriesPage() {
         );
 
         setCategories((prev) => (prev ? [...prev, created] : [created]));
+        toast.success("Categoría creada.");
+        // Pasa directo a modo edición de la categoría recién creada (en vez de
+        // limpiar el formulario) para poder subirle un icono sin tener que
+        // volver a buscarla en la lista y pulsar "Editar" a mano.
+        startEdit(created);
       }
-      toast.success(isEditing ? "Categoría guardada." : "Categoría creada.");
-      startCreate();
     } catch (err) {
       toast.danger(
         err instanceof ApiError

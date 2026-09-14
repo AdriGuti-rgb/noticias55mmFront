@@ -81,8 +81,11 @@ export default function PublicationDetailPage() {
   return (
     <DefaultLayout>
       <article className="mx-auto max-w-4xl px-6 py-16">
-        <Link className="text-sm text-accent hover:underline" to="/reportajes">
-          <ArrowLeftIcon className="mr-1 inline" size={14} />
+        <Link
+          className="button button--tertiary button--sm inline-flex items-center gap-2 rounded-full"
+          to="/reportajes"
+        >
+          <ArrowLeftIcon size={16} />
           {t.back}
         </Link>
 
