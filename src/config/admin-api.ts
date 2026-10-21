@@ -1,3 +1,5 @@
+import { startApiRequest } from "@/lib/api-activity";
+
 const TOKEN_KEY = "berto_admin_token";
 
 export function getAdminToken(): string | null {
@@ -38,25 +40,30 @@ async function request<T>(path: string, options: RequestInit, auth: boolean): Pr
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`/api${path}`, { ...options, headers });
+  const finishRequest = startApiRequest();
+  try {
+    const response = await fetch(`/api${path}`, { ...options, headers });
 
-  if (!response.ok) {
-    let message = `Error ${response.status}`;
-    try {
-      const body = await response.json();
-      if (typeof body?.message === "string") message = body.message;
-      else if (Array.isArray(body?.message)) message = body.message.join(", ");
-    } catch {
-      // sin cuerpo JSON legible
+    if (!response.ok) {
+      let message = `Error ${response.status}`;
+      try {
+        const body = await response.json();
+        if (typeof body?.message === "string") message = body.message;
+        else if (Array.isArray(body?.message)) message = body.message.join(", ");
+      } catch {
+        // sin cuerpo JSON legible
+      }
+      throw new ApiError(message, response.status);
     }
-    throw new ApiError(message, response.status);
-  }
 
-  // Los DELETE del backend devuelven 200 (no 204) con cuerpo vacío (`remove()` no retorna nada):
-  // `response.json()` sobre un cuerpo vacío lanza un SyntaxError, así que se lee como texto primero.
-  const text = await response.text();
-  if (!text) return undefined as T;
-  return JSON.parse(text) as T;
+    // Los DELETE del backend devuelven 200 (no 204) con cuerpo vacío (`remove()` no retorna nada):
+    // `response.json()` sobre un cuerpo vacío lanza un SyntaxError, así que se lee como texto primero.
+    const text = await response.text();
+    if (!text) return undefined as T;
+    return JSON.parse(text) as T;
+  } finally {
+    finishRequest();
+  }
 }
 
 export const publicApi = {

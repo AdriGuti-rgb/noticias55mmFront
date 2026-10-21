@@ -24,8 +24,9 @@ export const siteConfig = {
     },
   ],
   links: {
-    instagram: "https://instagram.com",
-    twitter: "https://x.com",
+    instagram: "https://www.instagram.com/noticiasen55mm/",
+    twitter: "https://x.com/noticiasen55mm?s=11",
     email: "mailto:noticiasen55mm@gmail.com",
+    tiktok: "https://www.tiktok.com/@noticias55mm",
   },
 };

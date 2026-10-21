@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, Input, Label, TextArea, TextField } from "@heroui/react";
 
 import { getTranslations } from "@/config/translations";
+import { startApiRequest } from "@/lib/api-activity";
 import { useLanguage } from "@/lib/language";
 import { toast } from "@/lib/toast";
 
@@ -20,6 +21,7 @@ export const DeveloperCommentForm = () => {
 
     setIsSending(true);
 
+    const finishRequest = startApiRequest();
     try {
       const response = await fetch("/api/comments", {
         method: "POST",
@@ -35,6 +37,7 @@ export const DeveloperCommentForm = () => {
     } catch {
       toast.danger(t.error);
     } finally {
+      finishRequest();
       setIsSending(false);
     }
   };

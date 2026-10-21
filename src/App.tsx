@@ -7,6 +7,8 @@ import PublicationDetailPage from "@/pages/publication-detail";
 import AboutPage from "@/pages/about";
 import ContactoPage from "@/pages/contacto";
 import AdminLoginPage from "@/pages/admin/login";
+import AdminForgotPasswordPage from "@/pages/admin/forgot-password";
+import AdminResetPasswordPage from "@/pages/admin/reset-password";
 import AdminDashboardPage from "@/pages/admin/dashboard";
 import AdminPublicationFormPage from "@/pages/admin/publication-form";
 import AdminCategoriesPage from "@/pages/admin/categories";
@@ -97,6 +99,8 @@ function App() {
 
       <Route element={<AdminAuthLayout />} path="/system/admin">
         <Route element={<AdminLoginPage />} path="login" />
+        <Route element={<AdminForgotPasswordPage />} path="forgot-password" />
+        <Route element={<AdminResetPasswordPage />} path="reset-password" />
         <Route element={<RequireAdminAuth />}>
           <Route element={<AdminLayout />}>
             <Route index element={<AdminDashboardPage />} />

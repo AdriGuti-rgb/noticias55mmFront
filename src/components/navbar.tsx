@@ -11,6 +11,7 @@ import { useLanguage } from "@/lib/language";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { LanguageSwitch } from "@/components/language-switch";
 import { InstagramIcon, MailIcon, CameraIcon } from "@/components/icons";
+import { Icon } from "@iconify/react";
 
 const NAV_LABEL_KEY_BY_HREF: Record<
   string,
@@ -35,7 +36,8 @@ export const Navbar = () => {
       <header className="mx-auto flex h-16 max-w-[1280px] items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-6">
           <RouterLink className="flex items-center gap-2" to="/">
-            <CameraIcon className="text-accent" size={26} />
+            {/* <CameraIcon className="text-accent" size={26} /> */}
+            <img src="/logo.png" alt="Logo" className="h-10 w-auto" />
             <span className="font-bold tracking-tight text-inherit">
               {siteConfig.name}
             </span>
@@ -67,6 +69,12 @@ export const Navbar = () => {
             target="_blank"
           >
             <InstagramIcon className="text-muted hover:text-accent transition-colors" />
+          </Link>
+          <Link aria-label="Email" href={siteConfig.links.tiktok}>
+            <Icon icon="iconoir:tiktok" className="text-muted hover:text-accent transition-colors w-6 h-6" />
+          </Link>
+          <Link aria-label="Email" href={siteConfig.links.twitter}>
+            <Icon icon="prime:twitter" className="text-muted hover:text-accent transition-colors w-5 h-5" />
           </Link>
           <Link aria-label="Email" href={siteConfig.links.email}>
             <MailIcon className="text-muted hover:text-accent transition-colors" />

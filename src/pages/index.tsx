@@ -27,7 +27,14 @@ export default function IndexPage() {
           .get<AdminPublication[]>("/publications")
           .then((all) =>
             setPublications(
-              [...all].sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0)),
+              [...all].sort((a, b) => {
+                const viewsDifference = (b.viewCount ?? 0) - (a.viewCount ?? 0);
+                if (viewsDifference !== 0) return viewsDifference;
+
+                const publishedA = a.publishedAt ? Date.parse(a.publishedAt) : 0;
+                const publishedB = b.publishedAt ? Date.parse(b.publishedAt) : 0;
+                return publishedB - publishedA;
+              }),
             ),
           )
           .catch(() => undefined),

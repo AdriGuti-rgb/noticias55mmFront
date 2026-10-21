@@ -8,6 +8,7 @@ import { InstagramIcon, MailIcon } from "@/components/icons";
 import { publicApi } from "@/config/admin-api";
 import { toast } from "@/lib/toast";
 import DefaultLayout from "@/layouts/default";
+import { Icon } from "@iconify/react";
 
 export default function ContactoPage() {
   const { language } = useLanguage();
@@ -66,7 +67,25 @@ export default function ContactoPage() {
               target="_blank"
             >
               <InstagramIcon className="text-accent" size={20} />
-              @noticiasen55mm.foto
+              @noticiasen55mm
+            </Link>
+            <Link
+              className="flex items-center gap-3 text-foreground no-underline hover:text-accent"
+              href={siteConfig.links.tiktok}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Icon icon="iconoir:tiktok" className="text-accent w-5 h-5" />
+              @noticiasen55mm
+            </Link>
+            <Link
+              className="flex items-center gap-3 text-foreground no-underline hover:text-accent pl-[0.15rem]"
+              href={siteConfig.links.twitter}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Icon icon="prime:twitter" className="text-accent w-4 h-4" />
+              @noticiasen55mm
             </Link>
           </div>
         </div>

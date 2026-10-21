@@ -1,6 +1,8 @@
 import { I18nProvider } from "react-aria-components";
 import { Toast } from "@heroui/react";
 
+import { ApiRequestIndicator } from "@/components/api-request-indicator";
+
 /**
  * Fuerza el locale de `react-aria-components` a español, independientemente
  * del idioma configurado en el navegador/SO de quien visite la web — el sitio
@@ -19,6 +21,7 @@ export function Provider({ children }: { children: React.ReactNode }) {
   return (
     <I18nProvider locale="es-ES">
       {children}
+      <ApiRequestIndicator />
       <Toast.Provider placement="bottom end" className="z-50" />
     </I18nProvider>
   );

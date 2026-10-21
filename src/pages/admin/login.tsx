@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Button, Input, Label, TextField } from "@heroui/react";
 
 import { CameraIcon, LogInIcon } from "@/components/icons";
@@ -38,21 +38,22 @@ export default function AdminLoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-sm">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10">
-          <CameraIcon className="text-accent" size={28} />
+        <div className="mx-auto flex items-center justify-center rounded-2xl">
+          {/* <CameraIcon className="text-accent" size={28} /> */}
+          <img src="/logo.png" alt="Logo" className="h-32 w-32 " />
         </div>
 
-        <p className="mt-6 text-center text-xs font-semibold uppercase tracking-widest text-muted">
+        <p className=" text-center text-xs font-semibold uppercase tracking-widest text-muted">
           {siteConfig.name}
         </p>
-        <h1 className="mt-2 text-center text-2xl font-semibold tracking-tight text-foreground">
+        {/* <h1 className="mt-2 text-center text-2xl font-semibold tracking-tight text-foreground">
           Panel de administración
-        </h1>
-        <p className="mt-2 text-center text-sm text-muted">
+        </h1> */}
+        {/* <p className="mt-2 text-center text-sm text-muted">
           Acceso restringido al desarrollador y al fotógrafo.
-        </p>
+        </p> */}
 
-        <div className="mt-8 rounded-2xl border border-separator bg-surface p-6 shadow-sm">
+        <div className="mt-4 rounded-2xl border border-separator bg-surface p-6 shadow-sm">
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <TextField isRequired name="email" type="email">
               <Label>Correo electrónico</Label>
@@ -81,6 +82,12 @@ export default function AdminLoginPage() {
               <LogInIcon size={18} />
               {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
             </Button>
+            <Link
+              className="text-center text-sm text-muted transition-colors hover:text-accent"
+              to="/system/admin/forgot-password"
+            >
+              ¿Has olvidado tu contraseña?
+            </Link>
           </form>
         </div>
 

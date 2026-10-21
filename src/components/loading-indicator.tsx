@@ -1,5 +1,6 @@
-import { Icon } from "@iconify/react";
 import clsx from "clsx";
+
+import { IrisSpinner } from "@/components/iris-spinner";
 
 interface LoadingIndicatorProps {
   label?: string;
@@ -28,11 +29,7 @@ export function LoadingIndicator({
       data-slot="spinner"
       role="status"
     >
-      <Icon
-        aria-hidden="true"
-        className={clsx(iconSize, "shrink-0 animate-spin")}
-        icon="streamline-plump:lens-remix"
-      />
+      <IrisSpinner className={clsx(iconSize, "shrink-0")} />
       {label}
     </span>
   );
